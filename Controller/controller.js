@@ -922,15 +922,335 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       await navigator.clipboard.writeText(botao.dataset.copiar || "");
-      const textoOriginal = botao.textContent;
-      botao.textContent = "✅";
+      const htmlOriginal = botao.innerHTML;
+      botao.innerHTML =
+        '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>';
       botao.classList.add("copiado");
       setTimeout(() => {
-        botao.textContent = textoOriginal;
+        botao.innerHTML = htmlOriginal;
         botao.classList.remove("copiado");
       }, 1500);
     } catch (erro) {
       console.error("Não foi possível copiar:", erro);
+    }
+  });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.querySelector("#agua-viva");
+  if (!canvas) {
+    return;
+  }
+
+  const zona = canvas.closest(".zona-agua-viva");
+  const ctx = canvas.getContext("2d");
+  const GLIFOS = ["}", "{", "§", ")", "(", "/", "\\", "]", "[", "s", "3"];
+  const TEXTURA = ["·", "░", "0", "|"];
+  const LINHAS_SINO = [
+    [3, 4, 5, 6, 7, 8, 9],
+    [2, 3, 4, 5, 6, 7, 8, 9, 10],
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    [2, 3, 4, 5, 6, 7, 8, 9, 10],
+    [3, 4, 5, 6, 7, 8, 9],
+  ];
+  const reduzMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let largura = 0;
+  let altura = 0;
+  let cell = 13;
+  let jellies = [];
+  let motes = [];
+  let paleta = [];
+  let cliqueX = 0;
+  let cliqueY = 0;
+  let cliqueTempo = -10;
+  const DURACAO_IMPULSO = 1.2;
+
+  function corVar(nome) {
+    return getComputedStyle(document.body).getPropertyValue(nome).trim();
+  }
+
+  function hexParaRgb(hex) {
+    const valor = hex.replace("#", "");
+    const bigint = parseInt(valor, 16);
+    return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+  }
+
+  function misturar(corA, corB, m) {
+    return [
+      corA[0] + (corB[0] - corA[0]) * m,
+      corA[1] + (corB[1] - corA[1]) * m,
+      corA[2] + (corB[2] - corA[2]) * m,
+    ];
+  }
+
+  function construirPaleta() {
+    const principal = hexParaRgb(corVar("--cor-principal") || "#851424");
+    const destaque = hexParaRgb(corVar("--cor-destaque") || "#ff5822");
+    const branco = [255, 250, 245];
+    const escura = misturar(principal, [0, 0, 0], 0.35);
+    const paradas = [
+      escura,
+      principal,
+      misturar(principal, destaque, 0.35),
+      misturar(principal, destaque, 0.65),
+      destaque,
+      misturar(destaque, branco, 0.5),
+      branco,
+    ];
+    paleta = paradas.map(([r, g, b]) => `rgb(${r | 0}, ${g | 0}, ${b | 0})`);
+  }
+
+  function rand(a, b) {
+    return a + Math.random() * (b - a);
+  }
+
+  function criarAguasVivas() {
+    const quantidade = Math.max(5, Math.min(12, Math.round((largura * altura) / 140000)));
+    jellies = Array.from({ length: quantidade }, () => ({
+      x: rand(-largura * 0.08, largura * 1.08),
+      y: rand(-altura * 0.12, altura * 1.12),
+      escala: rand(0.68, 1.25),
+      fase: rand(0, Math.PI * 2),
+      velocidade: rand(0.12, 0.3),
+      deslocamento: rand(-0.12, 0.12),
+      alfa: rand(0.65, 1),
+      semente: rand(0, 1000),
+      ultimoClique: -10,
+      faseBalanco: rand(0, Math.PI * 2),
+    }));
+  }
+
+  function criarMotas() {
+    const quantidade = Math.min(400, Math.round((largura * altura) / 6000));
+    motes = Array.from({ length: quantidade }, () => ({
+      x: rand(0, largura),
+      y: rand(0, altura),
+      raio: rand(0.45, 1.1),
+      alfa: rand(0.1, 0.5),
+      fase: rand(0, Math.PI * 2),
+    }));
+  }
+
+  function ajustarTamanho() {
+    const rect = zona.getBoundingClientRect();
+    largura = rect.width;
+    altura = rect.height;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+    canvas.width = Math.floor(largura * dpr);
+    canvas.height = Math.floor(altura * dpr);
+    canvas.style.width = largura + "px";
+    canvas.style.height = altura + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    cell = Math.max(10, Math.min(16, Math.round(Math.min(largura, altura) / 65)));
+    criarAguasVivas();
+    criarMotas();
+  }
+
+  function desenharSino(j, t, x, y, s) {
+    const pulso = 1 + Math.sin(t * 1.15 + j.fase) * 0.055;
+    const cw = cell * s * pulso;
+    const ch = cell * s * pulso;
+
+    LINHAS_SINO.forEach((cols, r) => {
+      cols.forEach((c) => {
+        const borda = Math.min(c - cols[0], cols[cols.length - 1] - c);
+        const ruido = Math.sin(c * 12.7 + r * 7.1 + j.semente);
+        let tom = Math.floor(2 + borda * 0.85 + ruido * 1.2 + (r === 0 ? 1 : 0));
+        tom = Math.max(0, Math.min(paleta.length - 1, tom));
+
+        const px = x + (c - 6) * cw;
+        const py = y + (r - 2.5) * ch;
+        ctx.globalAlpha = j.alfa * (0.78 + 0.22 * Math.sin(t * 1.7 + j.fase + c));
+        ctx.fillStyle = paleta[tom];
+        ctx.fillRect(px + 1, py + 1, cw - 1.5, ch - 1.5);
+
+        if ((c + r + (j.semente | 0)) % 7 === 0) {
+          ctx.fillStyle = paleta[paleta.length - 1];
+          ctx.globalAlpha = 0.72 * j.alfa;
+          ctx.font = `${Math.max(7, cell * s * 0.72)}px Consolas, "SFMono-Regular", "Courier New", monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(TEXTURA[Math.abs((c * 3 + r * 5) | 0) % TEXTURA.length], px + cw / 2, py + ch / 2);
+        }
+      });
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function desenharTentaculos(j, t, x, y, s) {
+    const quantidade = 6;
+    const comprimento = 17;
+
+    for (let k = 0; k < quantidade; k++) {
+      const ancora = x + (k - (quantidade - 1) / 2) * cell * s * 1.45;
+      const fase = j.fase + k * 0.8;
+
+      for (let n = 0; n < comprimento; n++) {
+        const progresso = n / comprimento;
+        // Usa a fase acumulada (j.faseBalanco), não t*frequência: assim, quando o
+        // impulso do clique sobe e desce, a velocidade do balanço muda suavemente,
+        // sem saltos — mesmo clicando várias vezes seguidas.
+        const balanco = Math.sin(j.faseBalanco + fase + progresso * 4.2) * cell * s * (0.8 + progresso * 1.9);
+        const curva = Math.sin(t * 0.52 + fase) * progresso * cell * s * 1.5;
+        const px = ancora + balanco + curva;
+        const py = y + cell * s * (3.15 + n * 0.9);
+        const esmaecer = (1 - progresso) * 0.72;
+        const glifo = GLIFOS[(k * 3 + n + Math.floor(t * 1.4)) % GLIFOS.length];
+
+        ctx.globalAlpha = j.alfa * esmaecer * (0.38 + 0.5 * Math.sin(n * 0.42 + t + fase) ** 2);
+        ctx.fillStyle = paleta[Math.max(0, Math.min(5, Math.floor((1 - progresso) * 5 + (k % 2))))];
+        ctx.font = `${Math.max(7, cell * s * 0.82)}px Consolas, "SFMono-Regular", "Courier New", monospace`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(glifo, px, py);
+
+        if (n % 4 === 0) {
+          ctx.globalAlpha *= 0.48;
+          ctx.fillText("/", px - cell * s * 0.9, py - cell * s * 0.25);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function desenharAguaViva(j, t, impulso) {
+    const s = j.escala;
+    const x = j.x + Math.sin(t * 0.23 + j.fase) * 18 * s;
+    const y = j.y + Math.cos(t * 0.3 + j.fase) * 12 * s;
+
+    ctx.save();
+    ctx.shadowColor = corVar("--cor-destaque-translucido") || "rgba(255, 88, 34, 0.145)";
+    ctx.shadowBlur = (9 + impulso * 6) * s;
+    desenharTentaculos(j, t, x, y, s);
+    desenharSino(j, t, x, y, s);
+    ctx.restore();
+  }
+
+  function desenharBrilhoClique(t) {
+    const decorrido = t - cliqueTempo;
+    if (decorrido < 0 || decorrido > DURACAO_IMPULSO) return;
+
+    const raioBrilho = 110;
+    const inicioX = Math.floor((cliqueX - raioBrilho) / cell) * cell;
+    const inicioY = Math.floor((cliqueY - raioBrilho) / cell) * cell;
+    const esmaecerGeral = 1 - decorrido / DURACAO_IMPULSO;
+
+    ctx.font = `${cell}px Consolas, "SFMono-Regular", "Courier New", monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    for (let y = inicioY; y <= cliqueY + raioBrilho; y += cell) {
+      for (let x = inicioX; x <= cliqueX + raioBrilho; x += cell) {
+        const dx = x - cliqueX;
+        const dy = y - cliqueY;
+        const distancia = Math.sqrt(dx * dx + dy * dy);
+        if (distancia > raioBrilho) continue;
+
+        const proximidade = 1 - distancia / raioBrilho;
+        const pulsoLocal = 0.55 + 0.45 * Math.sin(t * 6 - distancia * 0.08);
+        const opacidade = proximidade * pulsoLocal * 0.65 * esmaecerGeral;
+        if (opacidade <= 0.02) continue;
+
+        ctx.fillStyle = paleta[paleta.length - 3];
+        ctx.globalAlpha = opacidade;
+        ctx.fillText("•", x, y);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  let ultimoTimestamp = 0;
+  let tempo = 0;
+
+  function desenharFrame(timestampMs) {
+    const dt = ultimoTimestamp ? Math.min(0.04, (timestampMs - ultimoTimestamp) / 1000) : 0.016;
+    ultimoTimestamp = timestampMs;
+    if (!reduzMovimento) tempo += dt;
+
+    construirPaleta();
+    ctx.clearRect(0, 0, largura, altura);
+
+    motes.forEach((m) => {
+      const piscar = 0.5 + 0.5 * Math.sin(tempo * 0.8 + m.fase);
+      ctx.globalAlpha = m.alfa * piscar;
+      ctx.fillStyle = paleta[paleta.length - 2];
+      ctx.fillRect(m.x, m.y, m.raio, m.raio);
+    });
+    ctx.globalAlpha = 1;
+
+    jellies.forEach((j) => {
+      const impulso = Math.max(0, 1 - (tempo - j.ultimoClique) / DURACAO_IMPULSO);
+
+      if (!reduzMovimento) {
+        j.faseBalanco += (1.15 + impulso * 1.5) * dt;
+
+        const velocidadeExtra = 1 + impulso * 14;
+        j.x += j.deslocamento * 22 * dt * velocidadeExtra;
+        j.y -= j.velocidade * 22 * dt * velocidadeExtra;
+        if (j.y < -altura * 0.32) {
+          j.y = altura + rand(20, altura * 0.4);
+          j.x = rand(-largura * 0.08, largura * 1.08);
+        }
+        if (j.x < -largura * 0.2) j.x = largura + 30;
+        if (j.x > largura * 1.2) j.x = -30;
+      }
+      desenharAguaViva(j, tempo, impulso);
+    });
+
+    if (!reduzMovimento) desenharBrilhoClique(tempo);
+  }
+
+  let animando = true;
+  function loop(timestamp) {
+    if (!animando) return;
+    desenharFrame(timestamp);
+    requestAnimationFrame(loop);
+  }
+
+  ajustarTamanho();
+  construirPaleta();
+
+  if (reduzMovimento) {
+    desenharFrame(0);
+  } else {
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener("resize", () => {
+    ajustarTamanho();
+    if (reduzMovimento) {
+      ultimoTimestamp = 0;
+      desenharFrame(0);
+    }
+  });
+
+  if (!reduzMovimento) {
+    zona.addEventListener("click", (evento) => {
+      const rect = zona.getBoundingClientRect();
+      cliqueX = evento.clientX - rect.left;
+      cliqueY = evento.clientY - rect.top;
+      cliqueTempo = tempo;
+
+      let maisProxima = null;
+      let menorDistancia = Infinity;
+      jellies.forEach((j) => {
+        const distancia = Math.hypot(j.x - cliqueX, j.y - cliqueY);
+        if (distancia < menorDistancia) {
+          menorDistancia = distancia;
+          maisProxima = j;
+        }
+      });
+      if (maisProxima) maisProxima.ultimoClique = tempo;
+    });
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    animando = document.visibilityState === "visible" && !reduzMovimento;
+    if (animando) {
+      requestAnimationFrame(loop);
     }
   });
 });

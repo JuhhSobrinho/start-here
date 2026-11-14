@@ -23,7 +23,13 @@
 <body class="pagina-inicial">
   <header class="navbar">
     <nav class="nav-links">
-      <a href="index.html" class="logo">Começa Aqui</a>
+      <a href="index.html" class="logo">
+        <svg class="logo-icone" viewBox="0 0 40 40" width="28" height="28" aria-hidden="true">
+          <path d="M20 2 L35 11 L35 29 L20 38 L5 29 L5 11 Z" fill="currentColor" />
+          <path d="M24 14a8 8 0 1 0 0 12" stroke="var(--home-bg)" stroke-width="3" fill="none" stroke-linecap="round" />
+        </svg>
+        Começa Aqui
+      </a>
       <a href="vagas.html">Area do Candidato</a>
       <a href="contratante-login.html" class="active">Area do Contratante</a>
     </nav>
@@ -32,6 +38,9 @@
       <button type="button" id="tema-toggle" class="tema-toggle" aria-label="Alternar tema claro/escuro"></button>
     </div>
   </header>
+
+  <div class="zona-agua-viva">
+    <canvas id="agua-viva" class="agua-viva" aria-hidden="true"></canvas>
 
   <main class="login-wrap">
     <div class="login-card">
@@ -104,6 +113,7 @@
       </form>
     </div>
   </main>
+  </div>
 
   <footer class="footer">
     <p>&copy; 2026 Começa Aqui</p>
