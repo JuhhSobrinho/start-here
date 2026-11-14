@@ -97,6 +97,7 @@ ul {
 /* Navbar */
 
 .navbar {
+  position: relative;
   background-color: var(--card-bg);
   display: flex;
   align-items: center;
@@ -106,7 +107,13 @@ ul {
   border-bottom: 3px solid var(--bg-dark);
 }
 
-.nav-links .logo {
+.navbar-esquerda {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+}
+
+.navbar-esquerda .logo {
   font-family: var(--font-script);
   font-size: 2.1rem;
   font-weight: 700;
@@ -124,13 +131,14 @@ ul {
   color: var(--text-dark);
   padding-top: 10px;
   padding-bottom: 10px;
+  border-top: 2px solid transparent;
   border-bottom: 2px solid transparent;
   transition: border-color 0.2s ease;
 }
 
 .nav-links a:hover,
 .nav-links a.active {
-  border-color: var(--gold);
+  border-bottom-color: var(--gold);
 }
 
 .nav-sobre {
@@ -153,6 +161,7 @@ ul {
   border-radius: 50%;
   border: 1px solid var(--border-light);
   background-color: var(--box-bg);
+  color: var(--text-dark);
   font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
@@ -161,6 +170,36 @@ ul {
 
 .tema-toggle:hover {
   border-color: var(--gold);
+}
+
+.menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-light);
+  background-color: var(--box-bg);
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.menu-toggle:hover {
+  border-color: var(--gold);
+}
+
+.icone-menu-fechar {
+  display: none;
+}
+
+.menu-toggle[aria-expanded="true"] .icone-menu-abrir {
+  display: none;
+}
+
+.menu-toggle[aria-expanded="true"] .icone-menu-fechar {
+  display: block;
 }
 
 /* Redesign da home: paleta e componentes novos, isolados em .pagina-inicial
@@ -202,7 +241,7 @@ ul {
   border-bottom: 1px solid var(--home-borda);
 }
 
-.pagina-inicial .nav-links .logo {
+.pagina-inicial .navbar-esquerda .logo {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -225,15 +264,26 @@ ul {
 
 .pagina-inicial .nav-links a:hover,
 .pagina-inicial .nav-links a.active {
-  border-color: var(--cor-principal);
+  border-bottom-color: var(--cor-principal);
 }
 
 .pagina-inicial .tema-toggle {
+  color: var(--home-texto);
   border-color: var(--home-borda);
   background-color: var(--home-superficie);
 }
 
 .pagina-inicial .tema-toggle:hover {
+  border-color: var(--cor-principal);
+}
+
+.pagina-inicial .menu-toggle {
+  color: var(--home-texto);
+  border-color: var(--home-borda);
+  background-color: var(--home-superficie);
+}
+
+.pagina-inicial .menu-toggle:hover {
   border-color: var(--cor-principal);
 }
 
@@ -478,7 +528,8 @@ ul {
   width: 100%;
   max-width: 860px;
   padding: 48px 40px;
-  background-color: var(--home-superficie);
+  background-color: color-mix(in srgb, var(--home-superficie) 80%, transparent);
+  backdrop-filter: blur(6px);
   border: 1px solid var(--home-borda);
   border-radius: 12px;
   text-align: center;
@@ -1764,15 +1815,37 @@ ul {
 }
 
 @media (max-width: 720px) {
-  .navbar {
-    flex-direction: column;
-    gap: 12px;
+  .menu-toggle {
+    display: inline-flex;
   }
 
   .nav-links {
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: none;
+  }
+
+  .navbar.menu-aberto .nav-links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 12px 24px 20px;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-light);
+    z-index: 20;
+  }
+
+  .pagina-inicial .navbar.menu-aberto .nav-links {
+    background-color: var(--home-superficie);
+    border-bottom-color: var(--home-borda);
+  }
+
+  .navbar.menu-aberto .nav-links a {
+    width: 100%;
+    padding: 10px 0;
   }
 
   .contato-card {

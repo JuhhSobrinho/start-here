@@ -22,7 +22,7 @@
 </head>
 <body class="pagina-inicial">
   <header class="navbar">
-    <nav class="nav-links">
+    <div class="navbar-esquerda">
       <a href="index.html" class="logo">
         <svg class="logo-icone" viewBox="0 0 40 40" width="28" height="28" aria-hidden="true">
           <path d="M20 2 L35 11 L35 29 L20 38 L5 29 L5 11 Z" fill="currentColor" />
@@ -30,12 +30,25 @@
         </svg>
         Começa Aqui
       </a>
-      <a href="vagas.html">Area do Candidato</a>
-      <a href="contratante-login.html" class="active">Area do Contratante</a>
-    </nav>
+      <nav class="nav-links">
+        <a href="vagas.html">Area do Candidato</a>
+        <a href="contratante-login.html" class="active">Area do Contratante</a>
+        <a href="index.html#sobre" class="nav-sobre">Sobre</a>
+      </nav>
+    </div>
     <div class="navbar-direita">
-      <a href="index.html#sobre" class="nav-sobre">Sobre</a>
       <button type="button" id="tema-toggle" class="tema-toggle" aria-label="Alternar tema claro/escuro"></button>
+      <button type="button" id="menu-toggle" class="menu-toggle" aria-label="Abrir menu" aria-expanded="false">
+        <svg class="icone-menu-abrir" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+        <svg class="icone-menu-fechar" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
   </header>
 
