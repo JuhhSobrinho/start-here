@@ -1,5 +1,7 @@
 # start-here (Começa Aqui)
 
+![Tela inicial do Começa Aqui](docs/tela-inicial.png)
+
 Plataforma web de vagas de emprego, em forma de protótipo front-end com Supabase como backend. Há duas áreas: a do **candidato**, para ver e salvar vagas, e a do **contratante**, para cadastrar a empresa, publicar, pausar, editar o status e excluir vagas. Os dados ficam em um banco Postgres no Supabase, com políticas de segurança por linha (RLS) para que cada empresa acesse apenas as próprias vagas.
 
 ## Funcionalidades
